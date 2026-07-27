@@ -1,0 +1,51 @@
+dataset:
+  name: rossmann          # rossmann | m5
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+date_col: date
+target_col: sales
+id_cols: [store_id, item_id]     # granularity of the base series
+
+split:
+  train_end: "2015-06-19"
+  valid_end: "2015-07-17"        # rolling-origin validation window
+  test_end: "2015-08-14"
+
+features:
+  lags: [7, 14, 28]
+  rolling_windows: [7, 14, 28, 90]
+  use_promo: true
+  use_holidays: true
+  use_calendar: true
+
+model:
+  lightgbm:
+    objective: tweedie
+    tweedie_variance_power: 1.1
+    num_leaves: 128
+    learning_rate: 0.03
+    n_estimators: 3000
+    early_stopping_rounds: 100
+    min_child_samples: 30
+    feature_fraction: 0.8
+    bagging_fraction: 0.8
+    bagging_freq: 1
+    seed: 42
+
+  sarima:
+    order: [1, 1, 1]
+    seasonal_order: [1, 1, 1, 7]
+
+  prophet:
+    weekly_seasonality: true
+    yearly_seasonality: true
+    holidays: true
+
+reconciliation:
+  method: bottom_up        # bottom_up | mint
+  hierarchy: [item_id, store_id, region]
+
+evaluation:
+  metric: wmape
+  output_dir: reports
