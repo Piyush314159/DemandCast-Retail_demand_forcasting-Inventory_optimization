@@ -43,14 +43,23 @@ def mint_diagonal_reconcile(
     series relative to a plain bottom-up sum.
     """
     df = df.copy()
-    residual_var = df.groupby(hierarchy[0])[true_col].apply(
-        lambda s: ((s - df.loc[s.index, pred_col]) ** 2).mean()
-    )
-    residual_var = residual_var.replace(0, residual_var.mean())
+
+    # Compute per-series residual variance safely without relying on outer-df index
+    def _series_residual_var(grp):
+        return ((grp[true_col] - grp[pred_col]) ** 2).mean()
+
+    residual_var = df.groupby(hierarchy[0]).apply(_series_residual_var)
+    global_mean_var = residual_var[residual_var > 0].mean()
+    residual_var = residual_var.replace(0, global_mean_var).fillna(global_mean_var)
+
     weights = (1 / residual_var).rename("weight")
     df = df.merge(weights, left_on=hierarchy[0], right_index=True, how="left")
-    df["weighted_pred"] = df[pred_col]  # weights inform reporting; sums stay additive
-    return bottom_up_reconcile(df, hierarchy, pred_col)
+
+    # Apply weights to forecasts so the weighted sum propagates up the hierarchy
+    df["weighted_pred"] = df[pred_col] * df["weight"]
+    reconciled = bottom_up_reconcile(df, hierarchy, "weighted_pred")
+    reconciled = reconciled.rename(columns={"weighted_pred": pred_col})
+    return reconciled
 
 
 def main(config_path: str) -> None:

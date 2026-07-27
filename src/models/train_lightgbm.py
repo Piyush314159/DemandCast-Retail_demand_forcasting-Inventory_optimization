@@ -6,6 +6,7 @@ Usage:
 """
 import argparse
 
+# pyrefly: ignore [missing-import]
 import lightgbm as lgb
 import pandas as pd
 
@@ -29,7 +30,8 @@ def make_splits(df: pd.DataFrame, date_col: str, cfg: dict):
 
 
 def get_feature_cols(df: pd.DataFrame, target_col: str, date_col: str, id_cols: list) -> list:
-    drop_cols = {target_col, date_col} | set()
+    """Return model feature columns, excluding target, date, and id columns."""
+    drop_cols = {target_col, date_col} | set(id_cols)
     return [c for c in df.columns if c not in drop_cols]
 
 
@@ -42,13 +44,13 @@ def main(config_path: str) -> None:
     df = pd.read_parquet(processed_dir / "features.parquet")
     date_col, target_col, id_cols = cfg["date_col"], cfg["target_col"], cfg["id_cols"]
 
-    train, valid, test = make_splits(df, date_col, cfg)
     feature_cols = get_feature_cols(df, target_col, date_col, id_cols)
     cat_features = [c for c in CATEGORICAL_CANDIDATES if c in feature_cols]
 
+    # Cast categoricals on the full df first, then split once
     for c in cat_features:
         df[c] = df[c].astype("category")
-    train, valid, test = make_splits(df, date_col, cfg)  # re-split after dtype change
+    train, valid, test = make_splits(df, date_col, cfg)
 
     lgb_train = lgb.Dataset(
         train[feature_cols], label=train[target_col], categorical_feature=cat_features

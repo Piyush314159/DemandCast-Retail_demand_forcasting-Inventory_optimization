@@ -7,6 +7,7 @@ Usage:
 import argparse
 
 import pandas as pd
+# pyrefly: ignore [missing-import]
 from prophet import Prophet
 
 from src.utils.io import load_config, get_logger, ensure_dir
@@ -23,7 +24,8 @@ def fit_predict_prophet(
         yearly_seasonality=cfg["yearly_seasonality"],
     )
     if cfg.get("holidays"):
-        model.add_country_holidays(country_name="DE")  # adjust to your market
+        country = cfg.get("country", "US")
+        model.add_country_holidays(country_name=country)
     model.fit(train_df)
     future = model.make_future_dataframe(periods=horizon)
     forecast = model.predict(future)

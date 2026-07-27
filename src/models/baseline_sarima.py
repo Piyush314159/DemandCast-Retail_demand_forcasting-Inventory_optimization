@@ -7,6 +7,7 @@ Usage:
 import argparse
 
 import pandas as pd
+# pyrefly: ignore [missing-import]
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from src.utils.io import load_config, get_logger, ensure_dir
@@ -48,7 +49,7 @@ def main(config_path: str) -> None:
     for keys, group in df.groupby(id_cols):
         group = group.set_index(date_col).sort_index()
         train = group.loc[:train_end, target_col].asfreq("D").fillna(0)
-        test = group.loc[train_end:test_end, target_col].iloc[1:]
+        test = group.loc[(group.index > train_end) & (group.index <= test_end), target_col]
         if len(train) < 30 or len(test) == 0:
             continue
         try:

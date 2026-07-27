@@ -41,6 +41,7 @@ model:
     weekly_seasonality: true
     yearly_seasonality: true
     holidays: true
+    country: DE  # ISO country code for holiday calendar (e.g. DE, US, GB)
 
 reconciliation:
   method: bottom_up        # bottom_up | mint

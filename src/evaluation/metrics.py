@@ -15,6 +15,9 @@ def wmape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def mape(y_true: np.ndarray, y_pred: np.ndarray, eps: float = 1e-6) -> float:
+    """Mean Absolute Percentage Error. Uses epsilon clipping to avoid division by zero
+    for zero-sales periods. Note: MAPE is sensitive to low-volume SKUs; prefer wMAPE
+    for business reporting."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
     return np.mean(np.abs((y_true - y_pred) / np.clip(np.abs(y_true), eps, None)))
