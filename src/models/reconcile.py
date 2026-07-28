@@ -72,17 +72,23 @@ def main(config_path: str) -> None:
     recon_cfg = cfg["reconciliation"]
     hierarchy = recon_cfg["hierarchy"]
 
-    missing = [c for c in hierarchy if c not in df.columns and c != "region"]
+    # Filter hierarchy to only columns that actually exist in the predictions.
+    # Rossmann has no 'region' column; M5 may have state_id etc.
+    available_hierarchy = [c for c in hierarchy if c in df.columns]
+    missing = [c for c in hierarchy if c not in df.columns]
     if missing:
         logger.warning(
-            f"Hierarchy columns missing from predictions ({missing}); "
-            "add a region/store mapping before running reconciliation."
+            f"Skipping hierarchy levels not in predictions: {missing}. "
+            "To use them, add a store→region mapping in load_data."
         )
+    if not available_hierarchy:
+        logger.error("No valid hierarchy columns found — skipping reconciliation.")
+        return
 
     if recon_cfg["method"] == "bottom_up":
-        reconciled = bottom_up_reconcile(df, hierarchy, "y_pred")
+        reconciled = bottom_up_reconcile(df, available_hierarchy, "y_pred")
     elif recon_cfg["method"] == "mint":
-        reconciled = mint_diagonal_reconcile(df, hierarchy, "y_pred", cfg["target_col"])
+        reconciled = mint_diagonal_reconcile(df, available_hierarchy, "y_pred", cfg["target_col"])
     else:
         raise ValueError(f"Unknown reconciliation method: {recon_cfg['method']}")
 

@@ -45,11 +45,23 @@ def main(config_path: str) -> None:
     date_col, target_col, id_cols = cfg["date_col"], cfg["target_col"], cfg["id_cols"]
 
     feature_cols = get_feature_cols(df, target_col, date_col, id_cols)
-    cat_features = [c for c in CATEGORICAL_CANDIDATES if c in feature_cols]
 
-    # Cast categoricals on the full df first, then split once
-    for c in cat_features:
-        df[c] = df[c].astype("category")
+    # Robustly encode ALL non-numeric feature columns as integers.
+    # pd.api.types.is_numeric_dtype handles object, ArrowDtype strings,
+    # StringDtype, category, etc. — regardless of parquet backend used.
+    str_cols_encoded = []
+    for c in feature_cols:
+        if not pd.api.types.is_numeric_dtype(df[c]) and df[c].dtype != bool:
+            df[c], _ = pd.factorize(df[c])
+            str_cols_encoded.append(c)
+    if str_cols_encoded:
+        logger.info(f"Label-encoded {len(str_cols_encoded)} non-numeric columns: {str_cols_encoded}")
+
+    # Mark known categoricals for LightGBM's native categorical split logic
+    cat_features = [c for c in CATEGORICAL_CANDIDATES if c in feature_cols] + [
+        c for c in str_cols_encoded if c not in CATEGORICAL_CANDIDATES
+    ]
+
     train, valid, test = make_splits(df, date_col, cfg)
 
     lgb_train = lgb.Dataset(

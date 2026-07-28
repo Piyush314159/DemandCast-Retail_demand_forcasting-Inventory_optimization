@@ -6,9 +6,14 @@ Usage:
 """
 import argparse
 
+import logging
 import pandas as pd
 # pyrefly: ignore [missing-import]
 from prophet import Prophet
+from tqdm import tqdm
+
+# Suppress cmdstanpy's per-chain "start/done processing" INFO spam
+logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
 
 from src.utils.io import load_config, get_logger, ensure_dir
 
@@ -45,13 +50,22 @@ def main(config_path: str) -> None:
     test_end = pd.to_datetime(cfg["split"]["test_end"])
 
     results = []
-    for keys, group in df.groupby(id_cols):
+    groups = list(df.groupby(id_cols))
+    n_total = len(groups)
+    n_ok, n_fail, n_skip = 0, 0, 0
+
+    pbar = tqdm(groups, desc="Prophet", unit="store", dynamic_ncols=True)
+    for keys, group in pbar:
+        store_label = keys if not isinstance(keys, tuple) else "/".join(str(k) for k in keys)
+        pbar.set_postfix({"store": store_label, "ok": n_ok, "fail": n_fail, "skip": n_skip})
+
         group = group.sort_values(date_col)
         train = group[group[date_col] <= train_end][[date_col, target_col]].rename(
             columns={date_col: "ds", target_col: "y"}
         )
         test = group[(group[date_col] > train_end) & (group[date_col] <= test_end)]
         if len(train) < 30 or len(test) == 0:
+            n_skip += 1
             continue
         try:
             fc = fit_predict_prophet(train, len(test), prophet_cfg)
@@ -64,8 +78,13 @@ def main(config_path: str) -> None:
                     }
                 ).assign(**dict(zip(id_cols, keys if isinstance(keys, tuple) else [keys])))
             )
+            n_ok += 1
         except Exception as e:
             logger.warning(f"Prophet failed for {keys}: {e}")
+            n_fail += 1
+
+    logger.info(f"Prophet done — {n_ok} ok / {n_fail} failed / {n_skip} skipped out of {n_total} series")
+
 
     out = pd.concat(results, ignore_index=True) if results else pd.DataFrame()
     out_path = reports_dir / "prophet_predictions.parquet"
