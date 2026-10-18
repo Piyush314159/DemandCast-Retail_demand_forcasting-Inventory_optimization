@@ -280,39 +280,171 @@ export default function AIChatPanel({ isOpen, onClose, apiKey }: AIChatPanelProp
   );
 }
 
+function cleanMathAndLatex(text: string): string {
+  if (!text) return "";
+  return text
+    // Replace $$...$$ or $...$ blocks
+    .replace(/\$\$(.*?)\$\$/g, "$1")
+    .replace(/\$(.*?)\$/g, "$1")
+    // Replace common LaTeX commands
+    .replace(/\\text\{([^}]+)\}/g, "$1")
+    .replace(/\\bar\{([^}]+)\}/g, "$1")
+    .replace(/\\sigma_d/g, "Demand Volatility")
+    .replace(/\\sigma/g, "StdDev")
+    .replace(/\\times/g, "×")
+    .replace(/\\approx/g, "≈")
+    .replace(/\\rightarrow/g, "→")
+    .replace(/\\to/g, "→")
+    .replace(/\\sqrt\{([^}]+)\}/g, "√($1)")
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1 / $2)")
+    // Strip stray backslashes
+    .replace(/\\([a-zA-Z]+)/g, "$1");
+}
+
 function FormattedMessage({ content }: { content: string }) {
-  // Simple markdown-like rendering
-  const lines = content.split("\n");
-  return (
-    <>
-      {lines.map((line, i) => {
-        if (line.startsWith("• ") || line.startsWith("- ")) {
-          return (
-            <div key={i} style={{ paddingLeft: "8px", marginBottom: "2px" }}>
-              <span style={{ color: "var(--accent-teal)" }}>•</span>{" "}
-              {formatInline(line.slice(2))}
-            </div>
-          );
-        }
-        if (line.startsWith("**") && line.endsWith("**")) {
-          return (
-            <div key={i} style={{ fontWeight: 700, marginBottom: "4px" }}>
-              {line.slice(2, -2)}
-            </div>
-          );
-        }
-        if (line === "") return <div key={i} style={{ height: "6px" }} />;
-        return <div key={i}>{formatInline(line)}</div>;
-      })}
-    </>
-  );
+  const sanitized = cleanMathAndLatex(content);
+  const rawLines = sanitized.split("\n");
+
+  // Group table lines
+  const elements: React.ReactNode[] = [];
+  let tableBuffer: string[] = [];
+
+  const flushTable = (key: string) => {
+    if (tableBuffer.length === 0) return;
+    const rows = tableBuffer
+      .map((r) =>
+        r
+          .split("|")
+          .map((c) => c.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+      )
+      .filter((r) => r.length > 0 && !r.every((c) => /^[-:]+$/.test(c)));
+
+    if (rows.length > 0) {
+      const headerRow = rows[0];
+      const bodyRows = rows.slice(1);
+      elements.push(
+        <div key={`table-${key}`} className="ai-table-wrap">
+          <table className="ai-table">
+            <thead>
+              <tr>
+                {headerRow.map((h, hIdx) => (
+                  <th key={hIdx}>{formatInline(h)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bodyRows.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx}>{formatInline(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    tableBuffer = [];
+  };
+
+  rawLines.forEach((line, i) => {
+    const trimmed = line.trim();
+
+    // Table line detector
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      tableBuffer.push(trimmed);
+      return;
+    } else if (tableBuffer.length > 0) {
+      flushTable(`flush-${i}`);
+    }
+
+    // Dividers
+    if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
+      elements.push(<div key={`div-${i}`} className="ai-divider" />);
+      return;
+    }
+
+    // Headings (### or ## or #)
+    if (trimmed.startsWith("### ")) {
+      elements.push(
+        <div key={`h3-${i}`} className="ai-heading">
+          {formatInline(trimmed.slice(4))}
+        </div>
+      );
+      return;
+    }
+    if (trimmed.startsWith("## ")) {
+      elements.push(
+        <div key={`h2-${i}`} className="ai-heading" style={{ fontSize: "14px" }}>
+          {formatInline(trimmed.slice(3))}
+        </div>
+      );
+      return;
+    }
+    if (trimmed.startsWith("# ")) {
+      elements.push(
+        <div key={`h1-${i}`} className="ai-heading" style={{ fontSize: "15px" }}>
+          {formatInline(trimmed.slice(2))}
+        </div>
+      );
+      return;
+    }
+
+    // Bullet points (•, -, *, or numbered list)
+    const bulletMatch = trimmed.match(/^([•\-\*]|\d+\.)\s+(.+)$/);
+    if (bulletMatch) {
+      elements.push(
+        <div key={`bullet-${i}`} className="ai-bullet">
+          <span className="ai-bullet-dot">•</span>
+          <div>{formatInline(bulletMatch[2])}</div>
+        </div>
+      );
+      return;
+    }
+
+    // Empty space
+    if (trimmed === "") {
+      elements.push(<div key={`space-${i}`} style={{ height: "6px" }} />);
+      return;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <div key={`p-${i}`} style={{ marginBottom: "3px", lineHeight: "1.45" }}>
+        {formatInline(trimmed)}
+      </div>
+    );
+  });
+
+  if (tableBuffer.length > 0) {
+    flushTable("final");
+  }
+
+  return <>{elements}</>;
 }
 
 function formatInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (!text) return null;
+
+  // Split by bold (**...**) and inline code (`...`)
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
+      return (
+        <strong key={i} style={{ color: "var(--text-primary)", fontWeight: 700 }}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <span key={i} className="ai-code-pill">
+          {part.slice(1, -1)}
+        </span>
+      );
     }
     return part;
   });

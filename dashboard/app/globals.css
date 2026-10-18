@@ -824,6 +824,70 @@ body {
   text-align: left;
 }
 
+/* ─── AI Message Markdown Typography ─── */
+.ai-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-teal);
+  margin: 8px 0 4px 0;
+  display: block;
+}
+.ai-heading:first-child {
+  margin-top: 0;
+}
+.ai-divider {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 8px 0;
+}
+.ai-bullet {
+  padding-left: 2px;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+.ai-bullet-dot {
+  color: var(--accent-teal);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ai-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.ai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.ai-table th {
+  background: var(--bg-surface-elevated);
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.ai-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+.ai-code-pill {
+  background: rgba(0, 212, 184, 0.1);
+  color: var(--accent-teal);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid rgba(0, 212, 184, 0.2);
+}
+
 .ai-input-area {
   padding: 16px;
   border-top: 1px solid var(--border-subtle);

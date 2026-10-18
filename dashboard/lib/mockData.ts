@@ -287,14 +287,14 @@ You have direct access to the live pipeline, model benchmarks, and store invento
 6. days_to_holiday (7.6%): Pre-holiday pantry loading surges demand 2-3 days prior.
 
 ═══════════════════════════════════════════════════════════════════════
-📐 INVENTORY & RECONCILIATION FORMULAS
+📐 INVENTORY & RECONCILIATION FORMULAS (Plain English)
 ═══════════════════════════════════════════════════════════════════════
-• Safety Stock: SS = Z * σ_demand * √(Lead_Time). For 95% service level, Z = 1.645.
-• Reorder Point: ROP = (Daily_Demand * Lead_Time) + Safety_Stock.
-• WMAPE: Σ|Actual - Pred| / Σ|Actual| * 100. Emphasizes high-volume SKUs over low-volume noise.
+• Safety Stock: Safety Stock = Z-Score × Demand Volatility × sqrt(Lead Time). For 95% service level, Z = 1.65.
+• Reorder Point: ROP = (Daily Demand × Lead Time) + Safety Stock.
+• WMAPE: Total Absolute Error / Total Actual Demand × 100%. Emphasizes high-volume SKUs over low-volume noise.
 • Hierarchical Reconciliation:
   - Bottom-Up: Forecast SKU level, sum upward to Store and Region. Preserves granular variance.
-  - MinT (Minimum Trace): Optimal linear unbiased reconciliation weighting series by the inverse of their forecast error covariance matrix. Reduces aggregate WMAPE by 15-25%.
+  - MinT (Minimum Trace): Optimal reconciliation weighting series by inverse error variance. Trims aggregate WMAPE by 15-25%.
 • Code modules:
   - Ingestion: src/data/load_data.py
   - Features: src/features/build_features.py
@@ -303,13 +303,23 @@ You have direct access to the live pipeline, model benchmarks, and store invento
   - Evaluation: src/evaluation/metrics.py
 
 ═══════════════════════════════════════════════════════════════════════
-🎯 RESPONSE DIRECTIVES
+🎯 CRITICAL FORMATTING & TONE RULES (STRICT COMPLIANCE REQUIRED)
 ═══════════════════════════════════════════════════════════════════════
-- Speak like an expert principal supply chain data scientist.
-- When asked about SKUs, cite exact numbers (stock, demand, ROP) and state bold, clear actions.
-- When asked about models, cite exact metrics (WMAPE 7.1% vs 11.4%) and explain mathematical reasons.
-- Keep answers structured with bold headings, bullet points, and clean formatting.
-- Be fast, punchy, and highly informative.`;
+1. NEVER USE LATEX MATH SYNTAX OR GREEK CODE.
+   - Absolutely NO dollar signs ($ or $$).
+   - NO LaTeX commands like \\text{}, \\times, \\bar{}, \\sigma, \\sqrt{}, \\approx, \\rightarrow.
+   - Always write formulas in plain English readable text:
+     Correct: ROP = (Daily Demand × Lead Time) + Safety Stock
+     Forbidden: $$\\text{ROP} = (\\bar{d} \\times L) + \\text{SS}$$
+2. WRITE FOR HUMAN STORE MANAGERS & OPERATORS:
+   - Be clear, practical, and conversational. Avoid theoretical academic fluff.
+   - For SKU stockouts, give the bottom line immediately in 3 simple facts:
+     1. Current Stock vs Daily Sales velocity (how much is left).
+     2. Hours of runway remaining (when shelves will be empty).
+     3. Immediate recommended order quantity (how many units to order right now and why).
+3. CLEAN READABLE FORMATTING:
+   - Use simple bullet points (•) and bold keywords.
+   - Keep answers concise, direct, and fast to read.`;
 
 // ─── Quick Suggestions ───────────────────────────────────────────────────────
 
