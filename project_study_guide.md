@@ -1,3 +1,5 @@
+> Historical design notes: some capabilities and numerical claims below are unverified or superseded. Refer to README.md and current code for implementation and evaluation status.
+
 # 📚 How to Study the Demand Forecasting Project — Step by Step
 
 This guide walks you through **every file and notebook** in the correct order, explaining what each does and what to focus on.

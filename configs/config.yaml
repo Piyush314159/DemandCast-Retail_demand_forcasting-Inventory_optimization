@@ -9,7 +9,7 @@ id_cols: [store_id, item_id]     # granularity of the base series
 
 split:
   train_end: "2015-06-19"
-  valid_end: "2015-07-17"        # rolling-origin validation window
+  valid_end: "2015-07-17"        # single chronological validation window
   test_end: "2015-08-14"
 
 features:
@@ -44,7 +44,7 @@ model:
     country: DE  # ISO country code for holiday calendar (e.g. DE, US, GB)
 
 reconciliation:
-  method: bottom_up        # bottom_up | mint
+  method: bottom_up        # bottom_up only; mint raises NotImplementedError
   hierarchy: [item_id, store_id, region]
 
 evaluation:

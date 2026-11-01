@@ -162,6 +162,10 @@ export default function Home() {
             </div>
           </header>
 
+          <div role="status" style={{ padding: "12px 24px", background: "#422006", color: "#fef3c7" }}>
+            Demo data: charts, inventory, training controls, and financial figures are illustrative. The copilot is not connected to live pipeline outputs. MinT is unavailable.
+          </div>
+
           {/* Page content */}
           {activeTab === "dashboard" && <DashboardPage />}
           {activeTab === "forecasts" && <ForecastsPage />}

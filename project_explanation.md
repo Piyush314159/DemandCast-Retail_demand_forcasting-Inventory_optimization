@@ -1,3 +1,5 @@
+> Historical design notes: some capabilities and numerical claims below are unverified or superseded. Refer to README.md and current code for implementation and evaluation status.
+
 # 📦 DemandCast — Complete Project Explanation
 
 > A retail demand forecasting & inventory optimization system.

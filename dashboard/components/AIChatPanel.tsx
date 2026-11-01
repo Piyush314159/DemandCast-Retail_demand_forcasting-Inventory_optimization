@@ -24,8 +24,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: "init-1",
     role: "ai",
-    content:
-      "👋 Hi! I'm **DemandAI**, your intelligent forecasting assistant. I can help you:\n\n• Understand model metrics & forecast accuracy\n• Diagnose stockout and overstock risks\n• Explain hierarchical reconciliation\n• Recommend inventory actions\n\nWhat would you like to explore today?",
+    content: "This is a simulated inventory demonstration. I can explain the example data; live forecasts and validated savings are not connected.",
     time: formatTime(new Date()),
   },
 ];
@@ -230,7 +229,7 @@ export default function AIChatPanel({ isOpen, onClose, apiKey }: AIChatPanelProp
                   textAlign: "center",
                 }}
               >
-                🎭 Demo Mode — Add OpenAI or Gemini key for live AI
+                🎭 Demo Mode — Add OpenAI or Gemini key for AI-generated explanations of demo data
               </p>
             );
           }
@@ -452,37 +451,6 @@ function formatInline(text: string): React.ReactNode {
 
 // ─── Demo mode responses ──────────────────────────────────────────────────────
 
-function getDemoResponse(query: string): string {
-  const q = query.toLowerCase();
-
-  if (q.includes("sku-004") || q.includes("egg") || q.includes("stockout")) {
-    return "**SKU-004 (Free-Range Eggs)** is at **87% stockout probability** because:\n\n• Current stock: 45 units\n• Safety stock threshold: 150 units\n• Weekly forecast demand: 960 units\n• Reorder point (200 units) is 4.4× current stock\n\n**Recommended action:** Place an emergency reorder of at least 350 units immediately. Consider increasing safety stock to 200 units given high demand volatility (WMAPE ~14% for this SKU).";
-  }
-
-  if (q.includes("wmape") || q.includes("mape") || q.includes("metric")) {
-    return "Great question! Here's the difference:\n\n**WMAPE** (Weighted Mean Absolute Percentage Error)\n• Weights errors by actual sales volume\n• More forgiving on low-volume SKUs\n• Formula: Σ|actual−pred| / Σ|actual|\n• Our LightGBM: **7.1%** ✅\n\n**MAPE** (Mean Absolute Percentage Error)\n• Simple average of percentage errors\n• Can be distorted by near-zero actuals\n• Our LightGBM: **6.8%**\n\nWMAPE is preferred for retail because high-volume SKUs matter more to the business.";
-  }
-
-  if (q.includes("lightgbm") || q.includes("prophet") || q.includes("compare") || q.includes("model")) {
-    return "**Model Comparison Summary:**\n\n• **LightGBM** (7.1% WMAPE) — Best performer. Captures non-linear interactions between promotions, lags, and calendar features. Trains on all stores simultaneously as a global model.\n\n• **Prophet** (11.4% WMAPE) — Strong for trend + seasonality but struggles with promotional spikes. Per-series training is slow at scale.\n\n• **SARIMA** (13.8% WMAPE) — Good statistical baseline but can't leverage cross-series patterns or rich feature sets.\n\n**Verdict:** LightGBM wins by ~37% better WMAPE than the next best model.";
-  }
-
-  if (q.includes("mint") || q.includes("reconcil") || q.includes("hierarch")) {
-    return "**Hierarchical Reconciliation** ensures SKU-level forecasts sum correctly to store and regional totals.\n\n**Bottom-Up (current):**\n• Forecast at SKU level → aggregate up\n• Simple, preserves base-level detail\n• No modification to bottom forecasts\n\n**MinT (Minimum Trace):**\n• Jointly adjusts ALL levels simultaneously\n• Minimizes total forecast error variance\n• Uses in-sample residual covariance as weights\n• More statistically optimal but computationally heavier\n\n**Recommendation:** Switch to MinT if your store-level aggregation errors exceed 5% — it typically reduces aggregate WMAPE by 15-25%.";
-  }
-
-  if (q.includes("feature") || q.includes("important")) {
-    return "**Top LightGBM Feature Importances** (by SHAP gain):\n\n• **sales_lag_7** — 28.4% importance. Prior week same-day is the strongest signal.\n• **rolling_mean_28** — 21.1%. Monthly trend captures medium-term patterns.\n• **day_of_week** — 16.8%. Weekend uplift (Sat +35%) is massive.\n• **promo_flag** — 12.3%. Promotional events drive 30-40% demand spikes.\n• **sales_lag_14** — 9.2%. Two-week periodicity effect.\n• **days_to_holiday** — 7.6%. Pre-holiday buying behavior.\n\nThe model relies heavily on **lag features**, confirming strong autocorrelation in retail sales.";
-  }
-
-  if (q.includes("reorder") || q.includes("safety stock")) {
-    return "**Reorder Point Calculation** for Eggs (SKU-004):\n\n```\nROP = (avg_daily_demand × lead_time) + safety_stock\nROP = (137 × 1.5 days) + 150 = 356 units\n```\n\n**Safety Stock Formula (service level 95%):**\n```\nSS = z × σ_demand × √lead_time\nSS = 1.645 × 42 × √1.5 ≈ 85 units\n```\n\n**Current safety stock (150) seems adequate**, but current inventory (45) is critically below ROP. Reorder immediately with a quantity of **315 units** to reach optimal position.";
-  }
-
-  if (q.includes("overstock") || q.includes("butter") || q.includes("yogurt")) {
-    return "**Overstock Alert** — SKU-005 (Yogurt) & SKU-007 (Butter):\n\n• SKU-007 Butter: 890 units vs 780/week demand → **14 days excess**\n  - Estimated holding cost: ~$420/week\n  - Action: Pause orders for 2 weeks, consider markdown promotion\n\n• SKU-005 Yogurt: 520 units vs 580/week demand → **6 days excess**  \n  - Estimated holding cost: ~$95/week\n  - Action: Reduce next order by 40%\n\n**Combined overstock cost:** ~$515/week. A modest 10% markdown on butter would clear excess in 8 days.";
-  }
-
-  // Fallback
-  return "I can help you analyze your demand forecasting pipeline! Some things I can assist with:\n\n• **Forecast accuracy** — interpreting WMAPE, RMSE, bias\n• **Stockout/overstock risk** — specific SKU recommendations\n• **Model comparison** — LightGBM vs Prophet vs SARIMA\n• **Pipeline stages** — troubleshooting training runs\n• **Inventory optimization** — reorder points, safety stock\n\nTry asking me about a specific SKU or metric!";
+function getDemoResponse(_message: string): string {
+  return "Demo: the catalogue and dashboard are simulated. No live pipeline is connected, no measured savings are established, and MinT is unavailable. Add an API key for explanations of demo data.";
 }

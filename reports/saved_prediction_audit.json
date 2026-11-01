@@ -1,0 +1,48 @@
+{
+  "status": "descriptive_artifact_audit",
+  "start_date": "2015-07-18",
+  "end_date": "2015-07-31",
+  "shared_observations": 15610,
+  "metrics": {
+    "lightgbm": {
+      "source_rows": 15610,
+      "evaluated_rows": 15610,
+      "excluded_rows": 0,
+      "wmape_percent": 4.607010820331713,
+      "rmse": 416.339851488516
+    },
+    "naive": {
+      "source_rows": 46830,
+      "evaluated_rows": 15610,
+      "excluded_rows": 31220,
+      "wmape_percent": 29.96762555343765,
+      "rmse": 2372.0186747987145
+    },
+    "prophet": {
+      "source_rows": 46830,
+      "evaluated_rows": 15610,
+      "excluded_rows": 31220,
+      "wmape_percent": 19.358360464937423,
+      "rmse": 1498.5682513992547
+    },
+    "sarima": {
+      "source_rows": 46830,
+      "evaluated_rows": 15610,
+      "excluded_rows": 31220,
+      "wmape_percent": 20.50215395853233,
+      "rmse": 1652.404162582543
+    }
+  },
+  "limitations": [
+    "Saved predictions use different forecast origins and information sets.",
+    "LightGBM features use realized prior sales; this is not a fixed-origin multi-step forecast.",
+    "Common dates alone do not make these scores a controlled model comparison.",
+    "Artifact provenance does not establish training time, MinT gains, or inventory savings."
+  ],
+  "artifact_sha256": {
+    "lightgbm": "2b01531076551bacd2ba3812c6f3b9817d8c5cb6503dfb6745f231962ec1cf01",
+    "naive": "cc9990bce083dcfb3dd0c66e7f45dfe41c5d228370a7a2b1ffe6c785e3c5d3aa",
+    "prophet": "537e4dfab4da19d1e487a63e6cccc54b5f6e0f703aa080210b873250dc8d5baa",
+    "sarima": "878900d38649b4a425ebf3eee90d3b2bc04e8854c7f98c7dbab5f5775f3a77cc"
+  }
+}

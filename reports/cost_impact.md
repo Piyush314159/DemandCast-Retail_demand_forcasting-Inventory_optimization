@@ -18,7 +18,11 @@ context (e.g. lost margin per unit for stockouts, holding/markdown cost per unit
 for overstock). See `src/evaluation/metrics.estimate_cost_impact` for the
 implementation.
 
-## Results
+## Results status
+
+No inventory savings have been validated. The earlier 38.2% and $18,400/month statements are withdrawn. The table below is an unpopulated methodology example, not a result.
+
+## Unpopulated example
 
 | Model                   | Total Estimated Cost | Reduction vs. Baseline |
 |--------------------------|----------------------|--------------------------|

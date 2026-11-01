@@ -81,11 +81,11 @@ export default function ReconciliationPage() {
     },
     {
       id: "mint",
-      name: "MinT (Diagonal WLS)",
-      desc: "Jointly adjusts all levels. Weights series inversely to their in-sample residual variance.",
+      name: "MinT (illustration only)",
+      desc: "Unavailable in the backend. Requires a summing matrix, forecasts at all hierarchy levels, and pre-test forecast-error covariance.",
       pros: ["Statistically optimal", "Leverages all hierarchy levels", "Reduces aggregate error"],
       cons: ["Requires residual covariance estimate", "More computationally intensive"],
-      wmape_improvement: "~18% better",
+      wmape_improvement: "Not evaluated",
     },
   ];
 
@@ -104,6 +104,7 @@ export default function ReconciliationPage() {
             <button
               key={m}
               className={`btn btn-sm ${method === m ? "btn-primary" : "btn-secondary"}`}
+              disabled={m === "mint"}
               onClick={() => setMethod(m)}
               id={`recon-method-${m}`}
             >
@@ -128,7 +129,7 @@ export default function ReconciliationPage() {
               <div className="card-title">
                 {method === m.id && <span style={{ color: "var(--accent-teal)" }}>✓ </span>}
                 {m.name}
-                {m.id === "mint" && <span className="badge badge-purple" style={{ marginLeft: "8px", fontSize: "9px" }}>Advanced</span>}
+                {m.id === "mint" && <span className="badge badge-purple" style={{ marginLeft: "8px", fontSize: "9px" }}>Unavailable</span>}
               </div>
               {m.id === "mint" && (
                 <span className="badge badge-green" style={{ fontSize: "10px" }}>
@@ -166,7 +167,7 @@ export default function ReconciliationPage() {
             <div className="card-title-icon">⧉</div>
             Forecast Hierarchy
           </div>
-          <span className="badge badge-teal">{method === "bottom_up" ? "Bottom-Up" : "MinT"} Active</span>
+          <span className="badge badge-teal">{method === "bottom_up" ? "Bottom-Up demo" : "MinT illustration — unavailable in backend"}</span>
         </div>
 
         {HIERARCHY.map((level, li) => (

@@ -3,15 +3,14 @@ Hierarchical reconciliation: keep SKU -> store -> region forecasts consistent.
 
 Supports:
 - bottom_up: aggregate base-level (SKU) forecasts upward by summation.
-- mint: a simplified MinT-style trace-minimization reconciliation using
-  in-sample residual covariance (diagonal approximation for tractability).
+- mint: unavailable until independent forecasts at all hierarchy levels and
+  residual covariance estimated before the evaluation period are supplied.
 
 Usage:
     python -m src.models.reconcile --config configs/config.yaml
 """
 import argparse
 
-import numpy as np
 import pandas as pd
 
 from src.utils.io import load_config, get_logger, ensure_dir
@@ -37,29 +36,16 @@ def bottom_up_reconcile(df: pd.DataFrame, hierarchy: list, pred_col: str) -> pd.
 def mint_diagonal_reconcile(
     df: pd.DataFrame, hierarchy: list, pred_col: str, true_col: str
 ) -> pd.DataFrame:
-    """Simplified MinT reconciliation using a diagonal residual-variance weighting
-    (WLS variant of MinT). Weights base forecasts inversely to their historical
-    error variance before summing up the hierarchy, which down-weights noisier
-    series relative to a plain bottom-up sum.
+    """Reject the former test-outcome-weighted routine, which was not MinT.
+
+    Keep the entry point to fail clearly for existing callers. No evaluation
+    targets are read. Use bottom-up aggregation for the current pipeline.
     """
-    df = df.copy()
-
-    # Compute per-series residual variance safely without relying on outer-df index
-    def _series_residual_var(grp):
-        return ((grp[true_col] - grp[pred_col]) ** 2).mean()
-
-    residual_var = df.groupby(hierarchy[0]).apply(_series_residual_var)
-    global_mean_var = residual_var[residual_var > 0].mean()
-    residual_var = residual_var.replace(0, global_mean_var).fillna(global_mean_var)
-
-    weights = (1 / residual_var).rename("weight")
-    df = df.merge(weights, left_on=hierarchy[0], right_index=True, how="left")
-
-    # Apply weights to forecasts so the weighted sum propagates up the hierarchy
-    df["weighted_pred"] = df[pred_col] * df["weight"]
-    reconciled = bottom_up_reconcile(df, hierarchy, "weighted_pred")
-    reconciled = reconciled.rename(columns={"weighted_pred": pred_col})
-    return reconciled
+    raise NotImplementedError(
+        "MinT is not implemented. Use method: bottom_up. Valid MinT requires "
+        "a summing matrix, independent base forecasts at all levels, and "
+        "forecast-error covariance estimated on pre-test data."
+    )
 
 
 def main(config_path: str) -> None:

@@ -1,3 +1,5 @@
+> Historical design notes: some capabilities and numerical claims below are unverified or superseded. Refer to README.md and current code for implementation and evaluation status.
+
 # 🏔️ The Complete Learning Hill — Demand Forecasting Project
 
 > A stepwise roadmap from zero to fully understanding every line of this project.

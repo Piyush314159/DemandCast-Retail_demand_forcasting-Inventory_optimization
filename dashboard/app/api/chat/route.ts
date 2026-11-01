@@ -243,28 +243,13 @@ function createTextStreamResponse(text: string) {
   });
 }
 
-function getDemoResponse(query: string): string {
-  const q = query.toLowerCase();
-
-  if (q.includes("sku-004") || q.includes("egg") || q.includes("stockout")) {
-    return "### 🚨 SKU-004 (Free-Range Eggs 12pk) — Critical Stockout Diagnosis\n\n• **Store:** Store #08 | **Category:** Dairy\n• **Current Stock:** **45 units** vs **Safety Stock of 150 units**\n• **Reorder Point (ROP):** **200 units**\n• **Weekly Demand:** **960 units** (~**137 units/day**)\n• **Stockout Probability:** **87% (HIGH)**\n• **Depletion Runway:** **~0.33 days (8 hours remaining)**\n\n**Action Plan:** Trigger an emergency expedited PO for **350 units** to recover baseline buffer and avoid total morning stockout.";
+function getDemoResponse(message: string): string {
+  const q = message.toLowerCase();
+  if (q.includes("mint") || q.includes("reconcil")) {
+    return "Demo: the Python pipeline supports bottom-up aggregation. MinT is not implemented. The reconciliation screen is an illustrative design; it does not establish MinT gains.";
   }
-
-  if (q.includes("wmape") || q.includes("mape") || q.includes("metric")) {
-    return "### 📐 WMAPE vs MAPE in Retail Forecasting\n\n• **WMAPE (Weighted MAPE):** `Σ|Actual - Pred| / Σ|Actual| * 100`\n  - Weights errors by sales volume. A 10-unit error on eggs (high sales) is penalized more than on slow-moving gourmet items.\n  - **Our LightGBM score:** **7.1%** ✅\n\n• **MAPE (Mean Absolute Percentage Error):** `Mean(|Actual - Pred| / Actual) * 100`\n  - Equal weight per item. Low sales (e.g. 1 unit sold vs 2 predicted) skew the metric to 100% error.\n  - **Our LightGBM score:** **6.8%**\n\n**Verdict:** WMAPE is the industry gold standard for supply chains because inventory dollars correlate directly with volume.";
+  if (["metric", "wmape", "benchmark", "model", "saving", "cost"].some((word) => q.includes(word))) {
+    return "Demo: dashboard figures are illustrative. For recomputed saved-output metrics, run python -m src.evaluation.audit_saved_predictions and inspect reports/saved_prediction_audit.json. Different forecast origins prevent a controlled model ranking. Training times and inventory savings have not been substantiated.";
   }
-
-  if (q.includes("lightgbm") || q.includes("prophet") || q.includes("compare") || q.includes("model")) {
-    return "### ⚡ Model Benchmark Leaderboard\n\n1. **LightGBM Global:** **WMAPE 7.1%** | RMSE 482 | Train Time 4m 38s\n   - *Why it wins:* Single global model trained on all 1,115 stores; captures cross-series patterns; Tweedie deviance loss handles zero sales.\n2. **Prophet:** **WMAPE 11.4%** | RMSE 720 | Train Time 18m 02s\n   - *Limitation:* Per-series additive GAM; cannot capture cross-store interactions.\n3. **SARIMA(1,1,1)(1,1,1)[7]:** **WMAPE 13.8%** | RMSE 895\n   - *Limitation:* Univariate only, strictly linear.\n4. **Seasonal Naive:** **WMAPE 18.6%** (Baseline)\n\n**Business Value:** LightGBM achieves **38.2% cost reduction**, saving ~$18,400/month.";
-  }
-
-  if (q.includes("mint") || q.includes("reconcil") || q.includes("hierarch")) {
-    return "### 🔗 Hierarchical Reconciliation: Bottom-Up vs MinT\n\n• **Bottom-Up (Current):** Forecasts generated at SKU level and simply summed up to Store and Region. Preserves granular accuracy but aggregates noise upward.\n• **MinT (Minimum Trace):** Optimal generalized least-squares reconciliation. Weights series inversely by historical forecast error covariance. Down-weights volatile SKUs.\n\n**Recommendation:** Switch to MinT if aggregate regional error exceeds 5% — it typically trims aggregate WMAPE by 15-25%.";
-  }
-
-  if (q.includes("feature") || q.includes("important")) {
-    return "### ⚙️ Top LightGBM Features by SHAP Gain\n\n1. **sales_lag_7 (28.4%):** Prior week same-day sales. 7-day cyclical demand is dominant.\n2. **sales_roll_mean_28 (21.1%):** 28-day trailing average (shifted 1 day to prevent leakage).\n3. **day_of_week (16.8%):** Saturday demand surges +35%.\n4. **promo_flag (12.3%):** Promotions cause +30% to +40% volume spikes.\n5. **sales_lag_14 (9.2%):** Bi-weekly replenishment cycles.\n6. **days_to_holiday (7.6%):** Pre-holiday pantry stocking.";
-  }
-
-  return "I have full visibility into the DemandCast forecast pipeline, SKU inventory catalog, and model benchmarks! Ask me about specific SKU risks (e.g. SKU-004, SKU-007), store accuracy comparison, feature importances, or safety stock formulas.";
+  return "Demo: I can explain the simulated catalogue and inventory formulas. No live inventory or forecasting tools are connected. Add an API key for generated explanations of the same simulated data; a key does not connect the pipeline. Reorder quantities require validated demand, lead time, and inventory-policy inputs.";
 }
