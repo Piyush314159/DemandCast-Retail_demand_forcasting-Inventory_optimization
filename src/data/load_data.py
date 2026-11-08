@@ -8,6 +8,7 @@ import argparse
 
 import pandas as pd
 
+from src.data.database import write_frame
 from src.utils.io import load_config, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -64,6 +65,7 @@ def main(config_path: str) -> None:
     else:
         raise ValueError(f"Unknown dataset: {cfg['dataset']['name']}")
 
+    write_frame(cfg, "sales", df)
     out_path = processed_dir / "long_format.parquet"
     df.to_parquet(out_path, index=False)
     logger.info(f"Loaded {len(df):,} rows -> {out_path}")

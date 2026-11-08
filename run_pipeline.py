@@ -24,10 +24,14 @@ Available stage names:
     sarima          - SARIMA baseline  (slow)
     prophet         - Prophet baseline (slow)
     lightgbm        - LightGBM main model
+    gru             - Optional attention GRU + matched seasonal backtest
     reconcile       - Hierarchical forecast reconciliation
+    dashboard       - Export real SQL predictions to the website snapshot
 """
 
 import argparse
+import subprocess
+import sys
 import time
 import traceback
 
@@ -41,29 +45,27 @@ STAGES = [
     "sarima",
     "prophet",
     "lightgbm",
+    "gru",
     "reconcile",
+    "dashboard",
 ]
 
 
-def _import_mains():
-    """Lazy imports so missing optional deps only fail for the relevant stage."""
-    from src.data.load_data import main as load_data
-    from src.features.build_features import main as build_features
-    from src.models.baseline_naive import main as naive
-    from src.models.baseline_sarima import main as sarima
-    from src.models.baseline_prophet import main as prophet
-    from src.models.train_lightgbm import main as lightgbm
-    from src.models.reconcile import main as reconcile
+def _import_mains(stages=None):
+    """Run stages in separate interpreters, without loading optional libraries.
 
-    return {
-        "load_data": load_data,
-        "build_features": build_features,
-        "naive": naive,
-        "sarima": sarima,
-        "prophet": prophet,
-        "lightgbm": lightgbm,
-        "reconcile": reconcile,
-    }
+    Native OpenMP libraries used by tree and neural models can conflict in a
+    shared process on macOS. Process boundaries also release model memory after
+    every stage and keep optional dependencies local to the selected stage.
+    """
+    modules = {"load_data": "src.data.load_data", "build_features": "src.features.build_features",
+               "naive": "src.models.baseline_naive", "sarima": "src.models.baseline_sarima",
+               "prophet": "src.models.baseline_prophet", "lightgbm": "src.models.train_lightgbm",
+               "gru": "src.models.train_gru", "reconcile": "src.models.reconcile",
+               "dashboard": "src.evaluation.export_dashboard"}
+    return {name: (lambda config, module=modules[name]: subprocess.run(
+                [sys.executable, "-m", module, "--config", str(config)], check=True))
+            for name in (stages if stages is not None else STAGES)}
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +140,10 @@ def main() -> None:
     else:
         skip_set = set(args.skip or [])
         run_stages = [s for s in STAGES if s not in skip_set]
+        from src.utils.io import load_config
+        cfg = load_config(args.config)
+        if not cfg.get("model", {}).get("gru", {}).get("enabled", False):
+            run_stages = [s for s in run_stages if s != "gru"]
 
     skipped = [s for s in STAGES if s not in run_stages]
 
@@ -146,7 +152,7 @@ def main() -> None:
     if skipped:
         print(f"  {YELLOW}Skip  :{RESET} {skipped}")
 
-    mains = _import_mains()
+    mains = _import_mains(run_stages)
 
     # ------------------------------------------------------------------
     # Execute stages

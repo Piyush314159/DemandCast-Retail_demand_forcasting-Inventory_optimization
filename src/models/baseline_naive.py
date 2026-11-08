@@ -8,6 +8,7 @@ import argparse
 
 import pandas as pd
 
+from src.data.database import write_frame
 from src.utils.io import load_config, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -38,6 +39,7 @@ def main(config_path: str) -> None:
 
     test["y_pred"] = seasonal_naive_forecast(df, target_col, id_cols, date_col).loc[test.index]
 
+    write_frame(cfg, "naive_predictions", test[id_cols + [date_col, target_col, "y_pred"]])
     out_path = reports_dir / "naive_predictions.parquet"
     test[id_cols + [date_col, target_col, "y_pred"]].to_parquet(out_path, index=False)
     logger.info(f"Naive predictions -> {out_path} ({len(test):,} rows)")

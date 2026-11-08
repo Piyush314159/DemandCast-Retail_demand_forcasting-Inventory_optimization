@@ -14,6 +14,7 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 *.egg-info/
+.pytest_cache/
 
 # Reports
 reports/figures/*
@@ -26,3 +27,7 @@ reports/figures/*
 # Environment files & Secrets
 .env*
 !.env.example
+
+# Regenerable dashboard snapshot; never bundle the raw sales database.
+dashboard/data/*.json
+dashboard/data/*.tmp

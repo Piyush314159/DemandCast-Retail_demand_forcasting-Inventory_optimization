@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DemandCast workspace
 
-## Getting Started
+A retail forecasting workbench with a navy masthead, horizontal navigation, cobalt and orange chart signals, condensed headings and monospaced figures. A continuous metrics strip leads into a large forecast plot and a measured model-comparison brief. Built with Next.js, React, Recharts and Lucide.
 
-First, run the development server:
+## Run
+
+From the **project root**, start the configured MySQL instance and export its saved predictions:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+python scripts/mysql_local.py start
+python run_pipeline.py --only dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then start the website:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd dashboard
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open the URL printed by Next.js. After rerunning the export, use the header refresh button. The snapshot is read at request time; no rebuild is required for data updates.
 
-## Learn More
+To train the recurrent model and update the website, install `requirements-rnn.txt` in your Python environment and run `python run_pipeline.py --only gru dashboard` from the project root.
 
-To learn more about Next.js, take a look at the following resources:
+## Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Overview: real metrics, daily forecasts and stores with high forecast error.
+- Forecast explorer: model selection, all-store or individual-store charts, store search and CSV exports.
+- Model lab: measured attention-GRU and same-origin seasonal-baseline evaluation, architecture, dates and limitations.
+- Inventory planner: explicit unit-demand scenarios with safety stock, reorder points and order-up-to quantities. It does not infer units from Rossmann revenue or place orders.
+- Data health: source counts, integrity checks, missing calendar days and export timestamp.
+- Reports: actual CSV, JSON and Markdown downloads.
+- Workspace guide: deterministic explanations grounded in saved results. No external model, paid provider or API key is used.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Data contract
 
-## Deploy on Vercel
+`GET /api/workspace` reads `data/workspace.json`. Set server-only `DEMANDCAST_SNAPSHOT_PATH` to use another absolute path. The exporter writes atomically; a failed export retains the last valid snapshot. Missing or malformed snapshots produce a visible error, rather than demo data.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`POST /api/chat` accepts a question of up to 2,000 characters, validates JSON and origin, and returns a local evidence-based explanation. It rejects provider API keys. Previous `NEXT_PUBLIC_*_API_KEY` variables are unused and should be removed from local configuration.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MySQL connection credentials live in the ignored project-root `.env` and are used by Python only. The database is not exposed to the browser. The snapshot contains aggregated sales results and per-store predictions. Deploy only where that dataset is appropriate for the intended audience. Native server hosting is required for the API routes, and the snapshot must be supplied on the server.
+
+## Verification
+
+```bash
+npx tsc --noEmit
+npm run build
+```
+
+The Python suite in the project root checks temporal boundaries, feature leakage safeguards, recurrent training, SQL storage and snapshot exports. Browser checks cover navigation, store selection, search, model results, inventory recalculation and the evidence guide.

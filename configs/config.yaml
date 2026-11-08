@@ -3,6 +3,14 @@ dataset:
   raw_dir: data/raw
   processed_dir: data/processed
 
+database:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3307
+  name: demandcast
+  user: demandcast
+  password_env: MYSQL_PASSWORD   # kept in the ignored root .env, never in YAML
+
 date_col: date
 target_col: sales
 id_cols: [store_id, item_id]     # granularity of the base series
@@ -20,6 +28,22 @@ features:
   use_calendar: true
 
 model:
+  gru:
+    enabled: false           # opt in: python run_pipeline.py --only gru dashboard
+    lookback: 56
+    horizon: 14
+    hidden_size: 32
+    layers: 1
+    dropout: 0.1
+    learning_rate: 0.001
+    batch_size: 256
+    epochs: 12
+    patience: 3
+    training_days: 180
+    max_samples: 30000
+    threads: 4
+    seed: 42
+
   lightgbm:
     objective: tweedie
     tweedie_variance_power: 1.1

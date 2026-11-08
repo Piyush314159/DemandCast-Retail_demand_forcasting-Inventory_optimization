@@ -13,6 +13,7 @@ import argparse
 
 import pandas as pd
 
+from src.data.database import read_frame, write_frame
 from src.utils.io import load_config, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -53,7 +54,7 @@ def main(config_path: str) -> None:
     reports_dir = ensure_dir(cfg["evaluation"]["output_dir"])
 
     preds_path = reports_dir / "lightgbm_predictions.parquet"
-    df = pd.read_parquet(preds_path)
+    df = read_frame(cfg, "lightgbm_predictions", preds_path)
 
     recon_cfg = cfg["reconciliation"]
     hierarchy = recon_cfg["hierarchy"]
@@ -78,6 +79,7 @@ def main(config_path: str) -> None:
     else:
         raise ValueError(f"Unknown reconciliation method: {recon_cfg['method']}")
 
+    write_frame(cfg, "reconciled_forecasts", reconciled)
     out_path = reports_dir / "reconciled_forecasts.parquet"
     reconciled.to_parquet(out_path, index=False)
     logger.info(f"Reconciled forecasts -> {out_path} ({len(reconciled):,} rows)")

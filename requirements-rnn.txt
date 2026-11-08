@@ -1,0 +1,2 @@
+# Optional recurrent-model dependencies; install alongside requirements.txt.
+torch>=2.2,<3

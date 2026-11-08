@@ -1,255 +1,114 @@
-import { NextResponse } from "next/server";
-import { AI_SYSTEM_PROMPT } from "@/lib/mockData";
+import { readWorkspace } from "@/lib/server-workspace";
+import type { Workspace } from "@/lib/workspace";
 
-export async function POST(req: Request) {
+// A local, evidence-based guide. No browser API keys or paid provider calls.
+export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      // Next can normalize request.url internally; Host preserves the address
+      // the browser visited, including its local hostname and port.
+      const host = request.headers.get("host") || new URL(request.url).host;
+      if (new URL(origin).host !== host) throw new Error("Untrusted origin");
+    } catch {
+      return Response.json(
+        { error: "Cross-origin requests are not accepted." },
+        { status: 403 },
+      );
+    }
+  }
+  let body;
   try {
-    const body = await req.json();
-    const { message, history = [], apiKey, stream = true } = body;
-
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
-    }
-
-    // ── 1. Explicit Demo Mode ──────────────────────────────────────────────
-    if (apiKey === "demo") {
-      if (stream) {
-        return createTextStreamResponse(getDemoResponse(message));
+    const reader = request.body?.getReader();
+    const decoder = new TextDecoder();
+    let text = "",
+      bytes = 0;
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > 16000) {
+          await reader.cancel();
+          return Response.json(
+            { error: "Request is too large." },
+            { status: 413 },
+          );
+        }
+        text += decoder.decode(value, { stream: true });
       }
-      return NextResponse.json({
-        content: getDemoResponse(message),
-        provider: "demo",
-      });
+      text += decoder.decode();
     }
-
-    // Determine API key from client override or server environment
-    const rawKey =
-      apiKey ||
-      process.env.OPENAI_API_KEY ||
-      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-      process.env.GEMINI_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-      "";
-
-    const key = rawKey.trim();
-
-    // Fallback to Demo Mode if key is empty
-    if (!key) {
-      if (stream) {
-        return createTextStreamResponse(getDemoResponse(message));
-      }
-      return NextResponse.json({
-        content: getDemoResponse(message),
-        provider: "demo",
-      });
-    }
-
-    // ── 2. OpenAI Provider (sk-...) ─────────────────────────────────────────
-    if (key.startsWith("sk-")) {
-      const formattedHistory = history
-        .filter((m: { id?: string }) => m.id !== "init-1")
-        .map((m: { role: string; content: string }) => ({
-          role: m.role === "ai" || m.role === "assistant" ? "assistant" : "user",
-          content: m.content,
-        }));
-
-      const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: AI_SYSTEM_PROMPT },
-            ...formattedHistory,
-            { role: "user", content: message },
-          ],
-          max_tokens: 800,
-          temperature: 0.3,
-          stream: true,
-        }),
-      });
-
-      if (!openAiRes.ok) {
-        const errorJson = await openAiRes.json().catch(() => null);
-        const errMsg = errorJson?.error?.message || `OpenAI error ${openAiRes.status}`;
-        return NextResponse.json({ error: errMsg, provider: "openai" }, { status: openAiRes.status });
-      }
-
-      const encoder = new TextEncoder();
-      const customStream = new ReadableStream({
-        async start(controller) {
-          const reader = openAiRes.body?.getReader();
-          if (!reader) {
-            controller.close();
-            return;
-          }
-          const decoder = new TextDecoder();
-          let buffer = "";
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.startsWith("data: ")) {
-                  const dataStr = trimmed.slice(6);
-                  if (dataStr === "[DONE]") continue;
-                  try {
-                    const parsed = JSON.parse(dataStr);
-                    const token = parsed?.choices?.[0]?.delta?.content;
-                    if (token) {
-                      controller.enqueue(encoder.encode(token));
-                    }
-                  } catch {
-                    // Ignore parse errors on chunk boundaries
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            controller.error(err);
-          } finally {
-            controller.close();
-          }
-        },
-      });
-
-      return new Response(customStream, {
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "no-cache",
-        },
-      });
-    }
-
-    // ── 3. Google Gemini Provider (AIza... / AQ... / default) ───────────────
-    const historyForGemini = history
-      .filter((m: { id?: string }) => m.id !== "init-1")
-      .map((m: { role: string; content: string }) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      }));
-
-    const geminiBody = {
-      system_instruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
-      contents: [
-        ...historyForGemini,
-        { role: "user", parts: [{ text: message }] },
-      ],
-      generationConfig: {
-        maxOutputTokens: 900,
-        temperature: 0.3,
-        thinkingConfig: { thinkingBudget: 0 },
-      },
-    };
-
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse&key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiBody),
-      }
+    body = JSON.parse(text);
+  } catch {
+    return Response.json(
+      { error: "A valid JSON question is required." },
+      { status: 400 },
     );
-
-    if (!geminiRes.ok) {
-      const errorJson = await geminiRes.json().catch(() => null);
-      const errMsg =
-        errorJson?.error?.message || `Google Gemini error ${geminiRes.status}`;
-      return NextResponse.json({ error: errMsg, provider: "gemini" }, { status: geminiRes.status });
-    }
-
-    const encoder = new TextEncoder();
-    const customStream = new ReadableStream({
-      async start(controller) {
-        const reader = geminiRes.body?.getReader();
-        if (!reader) {
-          controller.close();
-          return;
-        }
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith("data: ")) {
-                const dataStr = trimmed.slice(6);
-                if (dataStr === "[DONE]") continue;
-                try {
-                  const parsed = JSON.parse(dataStr);
-                  const token = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (token) {
-                    controller.enqueue(encoder.encode(token));
-                  }
-                } catch {
-                  // Ignore JSON parse errors for split chunk frames
-                }
-              }
-            }
-          }
-        } catch (err) {
-          controller.error(err);
-        } finally {
-          controller.close();
-        }
+  }
+  if (
+    !body ||
+    typeof body.message !== "string" ||
+    !body.message.trim() ||
+    body.message.length > 2000
+  ) {
+    return Response.json(
+      { error: "Enter a question between 1 and 2,000 characters." },
+      { status: 400 },
+    );
+  }
+  if (body.apiKey && body.apiKey !== "demo") {
+    return Response.json(
+      {
+        error:
+          "API keys are not accepted. This guide reads saved workspace results locally.",
       },
-    });
-
-    return new Response(customStream, {
+      { status: 400 },
+    );
+  }
+  try {
+    const content = explain(body.message, await readWorkspace());
+    if (body.stream === false)
+      return Response.json({ content, provider: "workspace" });
+    return new Response(content, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-store",
       },
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return Response.json(
+      {
+        error:
+          "Export a valid workspace snapshot before asking about forecast results.",
+      },
+      { status: 503 },
+    );
   }
 }
 
-function createTextStreamResponse(text: string) {
-  const encoder = new TextEncoder();
-  const words = text.split(" ");
-  const stream = new ReadableStream({
-    async start(controller) {
-      for (let i = 0; i < words.length; i++) {
-        const word = (i === 0 ? "" : " ") + words[i];
-        controller.enqueue(encoder.encode(word));
-        await new Promise((r) => setTimeout(r, 15));
-      }
-      controller.close();
-    },
-  });
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
-    },
-  });
-}
-
-function getDemoResponse(message: string): string {
-  const q = message.toLowerCase();
-  if (q.includes("mint") || q.includes("reconcil")) {
-    return "Demo: the Python pipeline supports bottom-up aggregation. MinT is not implemented. The reconciliation screen is an illustrative design; it does not establish MinT gains.";
+function explain(question: string, workspace: Workspace): string {
+  const q = question.toLowerCase();
+  if (/inventory|stock|reorder|order|lead time|saving/.test(q)) {
+    return "Rossmann records store sales revenue, not unit demand. An inventory policy needs SKU-level demand, lead times, demand uncertainty, stock on hand, stock on order, supplier constraints and your chosen service level. The Inventory planner lets you enter those inputs for an illustrative calculation. No purchases or measured inventory savings are connected.";
   }
-  if (["metric", "wmape", "benchmark", "model", "saving", "cost"].some((word) => q.includes(word))) {
-    return "Demo: dashboard figures are illustrative. For recomputed saved-output metrics, run python -m src.evaluation.audit_saved_predictions and inspect reports/saved_prediction_audit.json. Different forecast origins prevent a controlled model ranking. Training times and inventory savings have not been substantiated.";
+  if (/compar|lightgbm|prophet|sarima|best|leaderboard/.test(q)) {
+    return "The historical model outputs use different forecast origins and available information, so they cannot be ranked fairly. The saved LightGBM model also used same-day customer counts; new training excludes that input. The controlled comparison is the GRU against its seasonal baseline, with the same origin, dates and stores. A repeated rolling-origin benchmark remains future work.";
   }
-  return "Demo: I can explain the simulated catalogue and inventory formulas. No live inventory or forecasting tools are connected. Add an API key for generated explanations of the same simulated data; a key does not connect the pipeline. Reorder quantities require validated demand, lead time, and inventory-policy inputs.";
+  if (/gru|rnn|recurrent|attention|perform|neural/.test(q)) {
+    const run = workspace.backtest;
+    return run
+      ? `The attention GRU uses ${run.lookback} days of history to forecast ${run.horizon} days directly. The test origin is ${run.forecast_origin}, covering ${run.test_start} through ${run.test_end}, with ${run.series.toLocaleString("en-GB")} stores.\n\nMeasured test WMAPE: GRU ${run.metrics.gru.wmape_percent.toFixed(2)}%; matched seasonal baseline ${run.metrics.seasonal_naive.wmape_percent.toFixed(2)}%. Lower is better.\n\nTraining-only scaling and validation-based checkpoint selection keep test targets out of training. This is one historical test origin and does not establish future performance.`
+      : "The attention GRU is implemented, but no measured run has been exported. Train the GRU and refresh the dashboard snapshot to inspect its matched seasonal-baseline evaluation.";
+  }
+  if (/wmape|error|bias|metric/.test(q)) {
+    return "WMAPE = sum of absolute forecast errors ÷ sum of absolute actual sales × 100. Lower is better; stores with more sales contribute more. Bias = total signed error ÷ total absolute actual sales × 100; positive values indicate overforecasting. WMAPE is undefined when total actual sales are zero, and the workspace shows a dash rather than a fabricated score.";
+  }
+  if (/data|quality|source|record|leak|customer/.test(q)) {
+    return `This snapshot contains ${workspace.salesRows.toLocaleString("en-GB")} sales records from ${workspace.storeCount.toLocaleString("en-GB")} stores, covering ${workspace.salesStart} through ${workspace.salesEnd}. It was exported at ${workspace.exportedAt}. The data source is ${workspace.source}, rather than a live sales feed. Data health shows duplicate, missing, negative and non-finite sales checks. Same-day customer counts are excluded from new LightGBM training.`;
+  }
+  if (/mint|reconcil|hierarch/.test(q)) {
+    return "The Python pipeline supports bottom-up aggregation. MinT is not implemented. Rossmann is store-level revenue, so it cannot establish SKU-level reconciliation or inventory gains.";
+  }
+  return "I can explain the saved GRU evaluation, WMAPE and bias, historical model comparisons, data quality, or inventory assumptions. Try asking ‘How did the GRU perform?’ or ‘What data is missing for inventory?’ This is a local evidence guide; it does not run training or change stock.";
 }

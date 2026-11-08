@@ -1,0 +1,60 @@
+{
+  "protocol": "fixed_origin_direct_multistep",
+  "model": "Attention GRU",
+  "train_end": "2015-06-19",
+  "forecast_origin": "2015-07-17",
+  "test_start": "2015-07-18",
+  "test_end": "2015-07-31",
+  "horizon": 14,
+  "lookback": 56,
+  "series": 1115,
+  "excluded_series": 0,
+  "training_samples": 30000,
+  "observations": 15610,
+  "seed": 42,
+  "best_validation_wmape": 0.21405866740662705,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.33055525765580646,
+      "validation_wmape": 0.2241702338830764
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.3069909576137187,
+      "validation_wmape": 0.21405866740662705
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.3009072827585673,
+      "validation_wmape": 0.22116645458060072
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.29666269330655115,
+      "validation_wmape": 0.2349034560853673
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.29156662094391,
+      "validation_wmape": 0.2340596665050121
+    }
+  ],
+  "training_seconds": 9.38,
+  "metrics": {
+    "gru": {
+      "wmape_percent": 20.13430669209988,
+      "rmse": 1727.7161017584112
+    },
+    "seasonal_naive": {
+      "wmape_percent": 20.920418043016674,
+      "rmse": 1846.0843924676758
+    }
+  },
+  "limitations": [
+    "Single fixed-origin test; repeated rolling-origin evaluation is still needed.",
+    "Compare GRU only with this same-origin seasonal baseline, not historical model artifacts.",
+    "Rossmann measures store sales revenue, not SKU unit demand or inventory savings.",
+    "Future promotions and opening schedules are not used; only future calendar features are known."
+  ]
+}

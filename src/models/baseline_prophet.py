@@ -15,6 +15,7 @@ from tqdm import tqdm
 # Suppress cmdstanpy's per-chain "start/done processing" INFO spam
 logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
 
+from src.data.database import write_frame
 from src.utils.io import load_config, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -87,6 +88,7 @@ def main(config_path: str) -> None:
 
 
     out = pd.concat(results, ignore_index=True) if results else pd.DataFrame()
+    write_frame(cfg, "prophet_predictions", out)
     out_path = reports_dir / "prophet_predictions.parquet"
     out.to_parquet(out_path, index=False)
     logger.info(f"Prophet predictions -> {out_path} ({len(out):,} rows)")

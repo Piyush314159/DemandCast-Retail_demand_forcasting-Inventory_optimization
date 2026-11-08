@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
+  // Read the latest pipeline snapshot on each request.
+  cacheComponents: false,
+  devIndicators: false,
   transpilePackages: ["recharts", "lucide-react"],
   turbopack: {
     rules: {

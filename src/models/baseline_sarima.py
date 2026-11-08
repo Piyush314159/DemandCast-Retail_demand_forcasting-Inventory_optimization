@@ -15,6 +15,7 @@ from statsmodels.tools.sm_exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from tqdm import tqdm
 
+from src.data.database import write_frame
 from src.utils.io import load_config, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -83,6 +84,7 @@ def main(config_path: str) -> None:
 
 
     out = pd.concat(results, ignore_index=True) if results else pd.DataFrame()
+    write_frame(cfg, "sarima_predictions", out)
     out_path = reports_dir / "sarima_predictions.parquet"
     out.to_parquet(out_path, index=False)
     logger.info(f"SARIMA predictions -> {out_path} ({len(out):,} rows)")

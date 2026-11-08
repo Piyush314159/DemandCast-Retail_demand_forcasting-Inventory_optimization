@@ -1,0 +1,62 @@
+export type Point = { date: string; actual: number; forecast: number };
+export type Metrics = {
+  wmape: number | null;
+  rmse: number;
+  bias: number | null;
+  actual: number;
+  forecast: number;
+  observations: number;
+};
+export type Store = Metrics & { id: string; points: Point[] };
+export type Model = Metrics & {
+  inputWarning?: string | null;
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  protocol: string;
+  points: Point[];
+  stores: Store[];
+};
+export type Backtest = {
+  protocol: string;
+  model: string;
+  train_end: string;
+  forecast_origin: string;
+  test_start: string;
+  test_end: string;
+  horizon: number;
+  lookback: number;
+  series: number;
+  excluded_series: number;
+  training_samples: number;
+  observations: number;
+  seed: number;
+  training_seconds: number;
+  best_validation_wmape: number;
+  history: { epoch: number; train_loss: number; validation_wmape: number }[];
+  metrics: Record<string, { wmape_percent: number; rmse: number }>;
+  limitations: string[];
+};
+export type Workspace = {
+  version: number;
+  exportedAt: string;
+  dataset: string;
+  source: string;
+  salesStart: string;
+  salesEnd: string;
+  salesRows: number;
+  storeCount: number;
+  unit: string;
+  quality: { name: string; value: number; unit: string }[];
+  models: Model[];
+  backtest: Backtest | null;
+  history: { date: string; actual: number }[];
+  notices: string[];
+  audit: {
+    limitations: string[];
+    shared_observations: number;
+    start_date: string;
+    end_date: string;
+  } | null;
+};
