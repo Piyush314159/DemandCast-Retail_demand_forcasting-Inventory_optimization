@@ -23,7 +23,7 @@ The website is a local research workspace. Shared production hosting would need 
 
 ## Verification
 
-- 38 Python tests passed, including real isolated MySQL integration tests, LightGBM training, training-only vocabulary/provenance, GRU checkpoint reload, temporal boundaries, calendar gaps and atomic snapshot export.
+- 37 Python tests passed, including real isolated MySQL integration tests, LightGBM training, training-only vocabulary/provenance, GRU checkpoint reload, temporal boundaries, calendar gaps and atomic snapshot export.
 - Production website build and TypeScript checks passed.
 - Migration verified all seven full-data tables against their source frames. The dashboard export completed against MySQL for 1,017,209 sales records and 1,115 stores. Feature generation and recurrent/tree-model training also passed against isolated MySQL test fixtures.
 - Local HTTP checks passed for overview and per-store data, missing selections, malformed/oversized questions, cross-origin rejection, credential rejection and evidence-guide responses.
@@ -45,3 +45,9 @@ Verified migrated rows: `sales` 1,017,209; `gru_predictions` 15,610; `lightgbm_p
 ## Repository cleanup
 
 Removed the superseded SQLite database and its completed migration helper, eight disconnected demo components, the mock-data module, five unused starter graphics, obsolete dashboard-only AI key configuration, an outdated UI screenshot and generated caches. The current ForecastWorkspace, MySQL data/credentials, trained models, source datasets, notebooks and Parquet inputs/audit artifacts are retained. The database CLI now supports MySQL queries and Parquet imports only.
+
+
+The older feature-test file was consolidated into `tests/test_forecast_safeguards.py`. Its distinct calendar-column and series-boundary checks remain; the basic lag-shift case duplicated the stronger calendar-gap test and was removed. The remaining five test modules cover active features. A temporary development API-check script was also removed.
+
+
+The mixed virtual environment was normalized to Python 3.11: `python` and `python3` now match `pip`, the environment metadata was refreshed, and the unused Python 3.14 packages, headers and launchers were removed. Setup instructions explicitly create a Python 3.11 environment. All 37 remaining tests passed using the corrected default interpreter.

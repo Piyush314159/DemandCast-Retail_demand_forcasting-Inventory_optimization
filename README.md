@@ -38,9 +38,9 @@ No measured 38.2% inventory-cost reduction or $18,400 monthly savings is establi
 ## Run the pipeline
 
 ```bash
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python scripts/mysql_local.py start  # after the one-time MySQL setup below
 python run_pipeline.py --config configs/config.yaml
 ```
@@ -84,7 +84,7 @@ For a new macOS installation:
 
 ```bash
 brew install mysql@8.4
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python scripts/mysql_local.py init
 ```
 
@@ -117,10 +117,10 @@ MySQL integration tests create fresh, randomly named `demandcast_test_*` schemas
 
 ## Train the recurrent model
 
-Use a PyTorch-supported Python environment (the local run uses Python 3.11):
+Use Python 3.11 for this project. The virtual environment’s `python`, `python3` and `pip` all use the same Python 3.11 interpreter:
 
 ```bash
-pip install -r requirements.txt -r requirements-rnn.txt
+python -m pip install -r requirements.txt -r requirements-rnn.txt
 python run_pipeline.py --only gru dashboard
 ```
 

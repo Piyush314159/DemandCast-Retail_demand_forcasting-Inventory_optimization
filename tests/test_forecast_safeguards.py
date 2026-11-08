@@ -11,7 +11,7 @@ import yaml
 
 from src.data.database import write_frame
 from src.evaluation.export_dashboard import main as export
-from src.features.build_features import build_features
+from src.features.build_features import add_calendar_features, add_lag_features, build_features
 from src.models.train_lightgbm import get_feature_cols, make_splits
 from run_pipeline import _import_mains
 
@@ -43,6 +43,21 @@ def test_lags_and_rolling_use_calendar_days_not_previous_rows(tmp_path):
     assert np.isnan(output.sales_lag_1.iloc[2])
     assert np.isnan(output.sales_roll_mean_2.iloc[2])
     assert output.sales_roll_mean_2.iloc[1] == 10
+
+
+def test_add_calendar_features_adds_expected_columns():
+    output = add_calendar_features(frame(), "date")
+    for column in ["day_of_week", "is_weekend", "week_of_year", "month", "year"]:
+        assert column in output.columns
+
+
+def test_add_lag_features_respects_series_boundaries():
+    first = frame()
+    second = frame().assign(store_id=2)
+    combined = pd.concat([first, second], ignore_index=True)
+    output = add_lag_features(combined, "sales", ["store_id", "item_id"], [1])
+    first_rows = output.groupby(["store_id", "item_id"]).head(1)
+    assert first_rows["sales_lag_1"].isna().all()
 
 
 def test_features_reject_zero_lags_duplicates_and_honor_flags(tmp_path):

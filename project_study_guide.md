@@ -29,7 +29,7 @@ demand-forecasting/
 │   ├── evaluation/metrics.py        ← Metrics calculation
 │   └── utils/io.py                  ← Config/logging helpers
 ├── tests/
-│   ├── test_features.py
+│   ├── test_forecast_safeguards.py
 │   └── test_metrics.py
 └── reports/cost_impact.md           ← Business impact report
 ```
@@ -213,10 +213,10 @@ Open these in Jupyter (`jupyter notebook` in terminal) in order:
 ---
 
 ### 🟣 STEP 12 — Study the Tests (15 min)
-**Files:** [tests/test_features.py](file:///Users/piyushmaji/Desktop/Project/demand-forecasting/tests/test_features.py), [tests/test_metrics.py](file:///Users/piyushmaji/Desktop/Project/demand-forecasting/tests/test_metrics.py)
+**Files:** [tests/test_forecast_safeguards.py](file:///Users/piyushmaji/Desktop/Project/demand-forecasting/tests/test_forecast_safeguards.py), [tests/test_metrics.py](file:///Users/piyushmaji/Desktop/Project/demand-forecasting/tests/test_metrics.py)
 
 **What to look for:**
-- `test_features.py` — verifies lag/rolling features are computed correctly and that no leakage occurs.
+- `test_forecast_safeguards.py` — verifies calendar features, lag/rolling boundaries, leakage safeguards, model splits and dashboard exports.
 - `test_metrics.py` — verifies WMAPE, RMSE, bias calculations with known inputs and expected outputs.
 
 Tests tell you exactly what the code is *supposed* to do — read them like documentation.
@@ -255,7 +255,7 @@ src/evaluation/metrics.py      ⑫
 notebooks/01_eda.ipynb         ⑬
 notebooks/02_baselines.ipynb   ⑭
 notebooks/03_lightgbm.ipynb    ⑮
-tests/test_features.py         ⑯
+tests/test_forecast_safeguards.py         ⑯
 tests/test_metrics.py          ⑰
 reports/cost_impact.md         ⑱
 ```
